@@ -144,6 +144,9 @@ const BASE_QUOTES = [
   {t:"Rock bottom will teach you more than mountain tops ever could",c:"resilience"},
   {t:"Airplanes take off against the wind, not with it",c:"resilience"},
   {t:"You were born with wings — why choose to crawl through life?",c:"resilience"},
+  {t:"Unfortunately, there will be no evidence that you tried if you don't make it", c:"resilience"},
+  {t:"Winners lose more than losers ever do", c:"resilience"},
+  {t:"When the road gets bumpy, you don't leave the car, you simply put your seatbelt on", c:"resilience"},
 
   // SELF-WORTH & IDENTITY
   {t:"To go wrong in your own way is better than to go right in someone else's",c:"self_worth"},
@@ -213,6 +216,11 @@ const BASE_QUOTES = [
   {t:"The seats are empty, the theatre is dark — why do you keep acting?",c:"self_worth"},
   {t:"You are free, and that is why you are lost",c:"self_worth"},
   {t:"One day you will realise that no one was really watching and you could have done whatever you wanted",c:"self_worth"},
+  {t:"Admire someone's beauty without questioning your own", c:"self_worth"},
+  {t:"If everything you offered wasn't enough, offer your absence. Salt isn't on the menu, but when it's missing, you feel it", c:"self_worth"},
+  {t:"If you are an ocean, be an ocean. Don't be a pond just because people can't swim", c:"self_worth"},
+  {t:"I like being alone — I have control over my own life. Therefore, in order to win me over, your presence has to feel better than my solitude. You are not competing with another person, you are competing with my comfort zones", c:"self_worth"},
+  {t:"To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment", c:"self_worth"},
 
   // WISDOM & LIFE
   {t:"A man who fears suffering is already suffering from what he fears",c:"wisdom"},
@@ -346,6 +354,14 @@ const BASE_QUOTES = [
   {t:"You will face men who love death as much as you love life",c:"wisdom"},
   {t:"Embarrassment is an under-explored emotion — go out there and make a fool of yourself",c:"wisdom"},
   {t:"He who shits on the road will meet flies on his return",c:"wisdom"},
+  {t:"None of us sit high enough to look down on anybody", c:"wisdom"},
+  {t:"If your phone doesn't ring when you are struggling, remember not to pick up calls when you are winning", c:"wisdom"},
+  {t:"People have beautiful things to say about you, but you must die first", c:"wisdom"},
+  {t:"If a poem hasn't ripped apart your soul, you haven't experienced poetry", c:"wisdom"},
+  {t:"Envy no man, for whatever you see, a price was paid", c:"wisdom"},
+  {t:"Women, money, and power have one thing in common — they run away from a desperate man", c:"wisdom"},
+  {t:"A man is a slave to anything he can't walk away from", c:"wisdom"},
+  {t:"Sometimes you have to suffer in life, not because you were bad, but because you didn't realise when to stop being good", c:"wisdom"},
 
   // LOVE & HEARTBREAK
   {t:"Love remains a word until someone comes and gives it meaning",c:"love"},
@@ -434,6 +450,8 @@ const BASE_QUOTES = [
   {t:"The man whom pain has not taught will always remain a child",c:"growth"},
   {t:"No tree can grow to heaven unless its roots reach down to hell",c:"growth"},
   {t:"Someday you'll wish you could go back in time, not to change anything, but just to feel the way it used to be",c:"growth"},
+  {t:"Consistency looks like nothing is happening, until everything changes", c:"growth"},
+  {t:"Forgive yourself for not knowing what only time could teach you", c:"growth"},
 
   // HOPE & HEALING
   {t:"Never deprive someone of hope, it might be all that they have",c:"hope"},
@@ -475,6 +493,7 @@ const BASE_QUOTES = [
   {t:"True happiness is all about smiling and making others smile",c:"hope"},
   {t:"Peace is not found in perfection, but in the acceptance of imperfection",c:"hope"},
   {t:"I do what I can for people because I wish I had somebody like me in my life",c:"hope"},
+  {t:"The reason you want it so badly is that the version of you in the future already has it", c:"hope"},
 
   // PAIN & DARKNESS
   {t:"Loneliness isn't the absence of people, it is the absence of being understood",c:"pain"},
@@ -521,6 +540,7 @@ const BASE_QUOTES = [
   {t:"When nobody wakes you up in the morning, when nobody waits for you at night, and when you can do whatever you want — what do you call it? Freedom or loneliness?",c:"pain"},
   {t:"To whom do I owe the biggest apology? No one has been crueller to me than I have been to me",c:"pain"},
   {t:"The greatest loss in life is not death, but what dies inside us while we're still alive",c:"pain"},
+  {t:"So many broken children living in grown bodies mimicking adult lives", c:"pain"},
 
   // MINDSET & PERSPECTIVE
   {t:"Maybe your garden isn't growing because every time a flower grows, you cut it to prove to someone that you're a gardener",c:"mindset"},
@@ -573,6 +593,9 @@ const BASE_QUOTES = [
   {t:"You're not stuck, you're just stagnant",c:"mindset"},
   {t:"It is not an evil thing to look at yourself with kindness — your life was never meant to be a punishment",c:"mindset"},
   {t:"I looked in your cup to see if you had enough; you looked in mine to check if I had more than you",c:"mindset"},
+  {t:"You accept failure in the gym because you know it's optimal for growth, but for some reason you fear it in every other aspect of your life", c:"mindset"},
+  {t:"You already know what to do, you're just negotiating with comfort", c:"mindset"},
+  {t:"A locked door won't open no matter how long you stand at it", c:"mindset"},
 
   // AMBITION & PURPOSE
   {t:"If a man hasn't discovered something that he will live for, he isn't fit to live",c:"ambition"},
@@ -633,6 +656,7 @@ const BASE_QUOTES = [
   {t:"You can't repay your father, but you can rise so high that the world respects the man who raised you",c:"ambition"},
   {t:"Never judge the future of a person by their current situation",c:"ambition"},
   {t:"When you're winning, you're not as good as you think you are. When you're losing, you're not as bad as you think you are",c:"ambition"},
+  {t:"A man's ultimate goal is exclusivity — we don't want to build a permanent life with someone who treated themselves as temporary", c:"ambition"},
 
   // FAITH & SPIRITUALITY
   {t:"I looked in temples, churches, and mosques, but I found God in my heart",c:"faith"},
@@ -653,6 +677,8 @@ const BASE_QUOTES = [
   {t:"If the gods listened to the prayers of all men, all humankind would quickly perish since they constantly pray for many evils to befall one another",c:"faith"},
   {t:"I don't know how I'll feel when I'm dead, but I don't want to regret the way I lived",c:"faith"},
   {t:"To know what is right and to choose to ignore it is the act of a coward",c:"faith"},
+  {t:"You don't have a soul, you are a soul — you have a body", c:"faith"},
+  {t:"Bad people turn to religion so they can gain the forgiveness of a being that is higher than the people they have wronged", c:"faith"},
 
   // HUMANITY & SOCIETY
   {t:"One apple fell and the world knows the meaning of gravity; millions of bodies fell and yet nobody knows the meaning of humanity",c:"humanity"},
@@ -696,6 +722,8 @@ const BASE_QUOTES = [
   {t:"The lesson of history is that no one learns",c:"humanity"},
   {t:"It is pointless to believe what you see if you only see what you believe",c:"humanity"},
   {t:"A man without money is a man without a voice. You could be the wisest, but if your pocket is empty, no one listens to you",c:"humanity"},
+  {t:"If you have a big enough cage, you'll never know you're in one", c:"humanity"},
+  {t:"An evil man will burn his own nation to the ground to rule over the ashes", c:"humanity"},
 
   // KINDNESS & GOODNESS
   {t:"Someone feels less alone because of my kindness",c:"kindness"},
@@ -732,6 +760,8 @@ const BASE_QUOTES = [
   {t:"To the world you might be one person, but to one person you might be the world",c:"kindness"},
   {t:"We can easily forgive a child who is afraid of the dark; the real tragedy is when men are afraid of the light",c:"kindness"},
   {t:"If you only have 10% and you give 10%, you gave 100%",c:"kindness"},
+  {t:"There's something beautiful about people who had every reason to become cruel, but chose softness anyway", c:"kindness"},
+  {t:"Supporting another person's success will never ruin yours", c:"kindness"},
 ];
 
 /* ── Storage (localStorage) ───────────────────────────────── */
