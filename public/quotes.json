@@ -1,1 +1,6 @@
-[]
+[
+  {
+    "t": "this is an admin test",
+    "c": "resilience"
+  }
+]
