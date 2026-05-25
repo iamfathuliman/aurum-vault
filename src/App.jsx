@@ -1218,7 +1218,7 @@ function AdminPanel({ onClose, setToast, refreshQuotes }) {
           body: JSON.stringify({ message:`Add quote to ${CATS[cat].label}`, content:btoa(unescape(encodeURIComponent(JSON.stringify(updated,null,2)))), sha }) }
       );
       if (!r.ok) throw new Error("Update failed — check your token has write access.");
-      setText(""); setToast("Quote added! Everyone will see it within seconds ✓");
+      setText(""); setToast("Quote added! Everyone will see it in about 60 seconds ✓");
       refreshQuotes(); onClose();
     } catch(e) { setErr(e.message); }
     setLoading(false);
@@ -1399,10 +1399,8 @@ export default function AurumVault() {
   const [adminOpen, setAdminOpen]     = useState(false);
   const [toast, setToast]             = useState(null);
 
-  const fetchGithubQuotes = useCallback(() => {
-    const gh = stored("av_gh");
-    if (!gh?.owner || !gh?.repo) return;
-    fetch(`https://raw.githubusercontent.com/${gh.owner}/${gh.repo}/main/public/quotes.json?t=${Date.now()}`)
+  const fetchGithubQuotes = useCallback(() => { // fetches from Vercel-served file
+    fetch(`/quotes.json?t=${Date.now()}`)
       .then(r => r.ok ? r.json() : [])
       .then(data => setGithubQuotes(Array.isArray(data) ? data : []))
       .catch(() => {});
