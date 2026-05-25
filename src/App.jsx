@@ -1167,61 +1167,210 @@ function FavsPage({ allQuotes, favs, toggleFav, setToast, setView }) {
 }
 
 /* ── AdminPanel ───────────────────────────────────────────── */
-function AdminPanel({ onClose, extraQuotes, setExtraQuotes, setToast }) {
-  const [pw, setPw] = useState(""); const [authed, setAuthed] = useState(false);
-  const [text, setText] = useState(""); const [cat, setCat] = useState("wisdom"); const [err, setErr] = useState("");
-  const login = () => { if (pw === ADMIN_PASSWORD) { setAuthed(true); setErr(""); } else setErr("Incorrect password."); };
-  const addQuote = () => {
+function AdminPanel({ onClose, setToast, refreshQuotes }) {
+  const [pw, setPw]           = useState("");
+  const [authed, setAuthed]   = useState(false);
+  const [screen, setScreen]   = useState("add");
+  const [gh, setGh]           = useState(() => stored("av_gh") || { owner:"", repo:"", pat:"" });
+  const [text, setText]       = useState("");
+  const [cat, setCat]         = useState("wisdom");
+  const [err, setErr]         = useState("");
+  const [loading, setLoading] = useState(false);
+  const [ghQuotes, setGhQuotes]     = useState([]);
+  const [loadingList, setLoadingList] = useState(false);
+
+  const isSetup = gh.owner && gh.repo && gh.pat;
+
+  const login = () => {
+    if (pw === ADMIN_PASSWORD) { setAuthed(true); setErr(""); }
+    else setErr("Incorrect password.");
+  };
+
+  const saveSetup = () => {
+    if (!gh.owner || !gh.repo || !gh.pat) { setErr("All three fields are required."); return; }
+    store("av_gh", gh); setErr(""); setToast("GitHub connected ✓"); setScreen("add");
+  };
+
+  const readGhFile = async () => {
+    const r = await fetch(
+      `https://api.github.com/repos/${gh.owner}/${gh.repo}/contents/public/quotes.json`,
+      { headers: { Authorization:`token ${gh.pat}`, Accept:"application/vnd.github.v3+json" } }
+    );
+    if (!r.ok) throw new Error(r.status === 404
+      ? "quotes.json not found — create public/quotes.json in your repo with content: []"
+      : "GitHub error — check your token and repo name.");
+    const data = await r.json();
+    const quotes = JSON.parse(atob(data.content.replace(/\n/g,"")));
+    return { quotes, sha: data.sha };
+  };
+
+  const addQuote = async () => {
     if (!text.trim()) { setErr("Quote text cannot be empty."); return; }
-    const updated = [...extraQuotes, { t:text.trim(), c:cat }];
-    setExtraQuotes(updated); store("av_extra_quotes", updated);
-    setText(""); setErr(""); setToast("Quote added ✓");
+    if (!isSetup) { setScreen("setup"); return; }
+    setLoading(true); setErr("");
+    try {
+      const { quotes, sha } = await readGhFile();
+      const updated = [...quotes, { t:text.trim(), c:cat }];
+      const r = await fetch(
+        `https://api.github.com/repos/${gh.owner}/${gh.repo}/contents/public/quotes.json`,
+        { method:"PUT",
+          headers:{ Authorization:`token ${gh.pat}`, Accept:"application/vnd.github.v3+json", "Content-Type":"application/json" },
+          body: JSON.stringify({ message:`Add quote to ${CATS[cat].label}`, content:btoa(unescape(encodeURIComponent(JSON.stringify(updated,null,2)))), sha }) }
+      );
+      if (!r.ok) throw new Error("Update failed — check your token has write access.");
+      setText(""); setToast("Quote added! Everyone will see it within seconds ✓");
+      refreshQuotes(); onClose();
+    } catch(e) { setErr(e.message); }
+    setLoading(false);
   };
-  const removeQuote = (idx) => {
-    const updated = extraQuotes.filter((_,i) => i !== idx);
-    setExtraQuotes(updated); store("av_extra_quotes", updated); setToast("Quote removed");
+
+  const loadList = async () => {
+    setScreen("list"); setLoadingList(true); setErr("");
+    try { const { quotes } = await readGhFile(); setGhQuotes(quotes); }
+    catch(e) { setErr(e.message); }
+    setLoadingList(false);
   };
+
+  const removeQuote = async (idx) => {
+    setLoadingList(true); setErr("");
+    try {
+      const { quotes, sha } = await readGhFile();
+      const updated = quotes.filter((_,i) => i !== idx);
+      await fetch(
+        `https://api.github.com/repos/${gh.owner}/${gh.repo}/contents/public/quotes.json`,
+        { method:"PUT",
+          headers:{ Authorization:`token ${gh.pat}`, Accept:"application/vnd.github.v3+json", "Content-Type":"application/json" },
+          body: JSON.stringify({ message:"Remove quote", content:btoa(unescape(encodeURIComponent(JSON.stringify(updated,null,2)))), sha }) }
+      );
+      setGhQuotes(updated); setToast("Quote removed ✓"); refreshQuotes();
+    } catch(e) { setErr(e.message); }
+    setLoadingList(false);
+  };
+
+  const iStyle = { width:"100%", background:"rgba(255,255,255,.06)", border:"1px solid rgba(201,168,76,.2)", borderRadius:8, color:"#e8e0d0", padding:"10px 14px", fontFamily:"'Jost',sans-serif", fontSize:".9rem", outline:"none", marginBottom:".8rem" };
+  const lblStyle = { display:"block", fontFamily:"'Jost'", fontSize:".73rem", color:"rgba(201,168,76,.7)", letterSpacing:".1em", marginBottom:".4rem", textTransform:"uppercase" };
+
   return (
-    <div className="modal" onClick={e => e.target.className.includes?.("modal") && onClose()}>
-      <div className="modal-box">
-        <h3 style={{ fontFamily:"'Cinzel',serif", color:"#C9A84C", letterSpacing:".15em", marginBottom:"1.2rem", fontSize:"1rem" }}>ADMIN PANEL</h3>
-        {!authed ? (
+    <div className="modal" onClick={e => { if(e.target.className?.includes?.("modal")) onClose(); }}>
+      <div className="modal-box" style={{ maxWidth:500 }}>
+
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1.2rem" }}>
+          <h3 style={{ fontFamily:"'Cinzel',serif", color:"#C9A84C", letterSpacing:".15em", fontSize:".95rem" }}>ADMIN PANEL</h3>
+          {authed && (
+            <div style={{ display:"flex", gap:6 }}>
+              {[["add","Add"],["list","Manage"],["setup","⚙️"]].map(([s,l]) => (
+                <button key={s} className="btn-ghost" style={{ fontSize:".7rem", padding:"4px 10px", borderColor:screen===s?"rgba(201,168,76,.5)":undefined, color:screen===s?"#C9A84C":undefined }}
+                  onClick={() => s==="list" ? loadList() : setScreen(s)}>{l}</button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {!authed && (
           <div>
-            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:"italic", color:"rgba(220,210,190,.6)", marginBottom:"1rem" }}>Enter your admin password to add quotes.</p>
-            <input className="admin-input" type="password" placeholder="Password" value={pw} onChange={e => setPw(e.target.value)} onKeyDown={e => e.key==="Enter"&&login()} style={{ marginBottom:".8rem" }} />
+            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:"italic", color:"rgba(220,210,190,.55)", marginBottom:"1rem", fontSize:".95rem" }}>Enter your admin password to continue.</p>
+            <input style={iStyle} type="password" placeholder="Password" value={pw} onChange={e => setPw(e.target.value)} onKeyDown={e => e.key==="Enter"&&login()} />
             {err && <p style={{ color:"#fb7185", fontSize:".8rem", marginBottom:".8rem" }}>{err}</p>}
             <div style={{ display:"flex", gap:8 }}>
               <button className="btn-gold" style={{ padding:"10px 24px", borderRadius:8, fontSize:".85rem" }} onClick={login}>Enter</button>
               <button className="btn-outline" style={{ padding:"10px 20px", borderRadius:8, fontSize:".85rem" }} onClick={onClose}>Cancel</button>
             </div>
           </div>
-        ) : (
+        )}
+
+        {authed && screen === "setup" && (
           <div>
-            <label style={{ display:"block", fontFamily:"'Jost'", fontSize:".75rem", color:"rgba(201,168,76,.7)", letterSpacing:".1em", marginBottom:".5rem", textTransform:"uppercase" }}>Quote Text</label>
-            <textarea className="admin-input" rows={4} value={text} onChange={e => setText(e.target.value)} placeholder="Type your quote here…" style={{ resize:"vertical", marginBottom:".8rem" }} />
-            <label style={{ display:"block", fontFamily:"'Jost'", fontSize:".75rem", color:"rgba(201,168,76,.7)", letterSpacing:".1em", marginBottom:".5rem", textTransform:"uppercase" }}>Category</label>
-            <select className="admin-input" value={cat} onChange={e => setCat(e.target.value)} style={{ marginBottom:"1rem" }}>
+            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:"italic", color:"rgba(220,210,190,.5)", marginBottom:"1.2rem", lineHeight:1.65, fontSize:".95rem" }}>
+              Connect your GitHub repo so quotes update the site for everyone automatically.
+            </p>
+            <label style={lblStyle}>Your GitHub Username</label>
+            <input style={iStyle} placeholder="e.g. janedoe" value={gh.owner} onChange={e => setGh({...gh,owner:e.target.value.trim()})} />
+            <label style={lblStyle}>Repository Name</label>
+            <input style={iStyle} placeholder="e.g. aurum-vault" value={gh.repo} onChange={e => setGh({...gh,repo:e.target.value.trim()})} />
+            <label style={lblStyle}>Personal Access Token</label>
+            <input style={iStyle} type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" value={gh.pat} onChange={e => setGh({...gh,pat:e.target.value.trim()})} />
+            <div style={{ background:"rgba(201,168,76,.05)", border:"1px solid rgba(201,168,76,.15)", borderRadius:10, padding:"1rem 1.1rem", marginBottom:"1rem" }}>
+              <p style={{ fontFamily:"'Cinzel',serif", fontSize:".68rem", color:"rgba(201,168,76,.65)", letterSpacing:".1em", marginBottom:".6rem" }}>HOW TO CREATE YOUR TOKEN</p>
+              <ol style={{ fontFamily:"'Jost',sans-serif", fontSize:".79rem", color:"rgba(220,210,190,.55)", lineHeight:1.85, paddingLeft:"1.2rem" }}>
+                <li>Go to <strong style={{color:"rgba(201,168,76,.8)"}}>github.com → your profile photo → Settings</strong></li>
+                <li>Scroll to the bottom → <strong style={{color:"rgba(201,168,76,.8)"}}>Developer Settings</strong></li>
+                <li><strong style={{color:"rgba(201,168,76,.8)"}}>Personal access tokens → Tokens (classic)</strong></li>
+                <li>Click <strong style={{color:"rgba(201,168,76,.8)"}}>Generate new token (classic)</strong></li>
+                <li>Tick the <strong style={{color:"rgba(201,168,76,.8)"}}>repo</strong> checkbox only</li>
+                <li>Generate → copy the token → paste above</li>
+              </ol>
+              <p style={{ fontFamily:"'Jost',sans-serif", fontSize:".74rem", color:"rgba(220,210,190,.3)", marginTop:".8rem", lineHeight:1.55 }}>
+                Also create <strong>public/quotes.json</strong> in your repo (if it doesn't exist) with just: <code style={{background:"rgba(255,255,255,.07)",padding:"1px 5px",borderRadius:3}}>[]</code>
+              </p>
+            </div>
+            {err && <p style={{ color:"#fb7185", fontSize:".8rem", marginBottom:".8rem" }}>{err}</p>}
+            <div style={{ display:"flex", gap:8 }}>
+              <button className="btn-gold" style={{ padding:"10px 24px", borderRadius:8, fontSize:".85rem" }} onClick={saveSetup}>Save & Connect</button>
+              <button className="btn-outline" style={{ padding:"10px 20px", borderRadius:8, fontSize:".85rem" }} onClick={() => setScreen("add")}>Back</button>
+            </div>
+          </div>
+        )}
+
+        {authed && screen === "add" && (
+          <div>
+            {!isSetup ? (
+              <div style={{ background:"rgba(201,168,76,.07)", border:"1px solid rgba(201,168,76,.2)", borderRadius:10, padding:".9rem 1.1rem", marginBottom:"1.2rem", cursor:"pointer" }} onClick={() => setScreen("setup")}>
+                <p style={{ fontFamily:"'Jost',sans-serif", fontSize:".82rem", color:"#C9A84C", fontWeight:500 }}>⚙️ Connect GitHub first</p>
+                <p style={{ fontFamily:"'Jost',sans-serif", fontSize:".75rem", color:"rgba(220,210,190,.4)", marginTop:".25rem" }}>Tap here to set up — takes 2 minutes</p>
+              </div>
+            ) : (
+              <div style={{ background:"rgba(52,211,153,.06)", border:"1px solid rgba(52,211,153,.2)", borderRadius:8, padding:".6rem 1rem", marginBottom:"1rem", display:"flex", alignItems:"center", gap:8 }}>
+                <span>✓</span>
+                <p style={{ fontFamily:"'Jost',sans-serif", fontSize:".78rem", color:"rgba(52,211,153,.8)" }}>Connected to <strong>{gh.owner}/{gh.repo}</strong></p>
+              </div>
+            )}
+            <label style={lblStyle}>Quote Text</label>
+            <textarea style={{...iStyle,resize:"vertical"}} rows={4} value={text} onChange={e => setText(e.target.value)} placeholder="Type your quote here…" />
+            <label style={lblStyle}>Category</label>
+            <select style={iStyle} value={cat} onChange={e => setCat(e.target.value)}>
               {Object.entries(CATS).map(([k,c]) => <option key={k} value={k}>{c.icon} {c.label}</option>)}
             </select>
-            {err && <p style={{ color:"#fb7185", fontSize:".8rem", marginBottom:".8rem" }}>{err}</p>}
-            <div style={{ display:"flex", gap:8, marginBottom:"1.5rem" }}>
-              <button className="btn-gold" style={{ padding:"10px 24px", borderRadius:8, fontSize:".85rem" }} onClick={addQuote}>Add Quote</button>
+            {err && <p style={{ color:"#fb7185", fontSize:".82rem", marginBottom:".8rem", lineHeight:1.5 }}>{err}</p>}
+            <div style={{ display:"flex", gap:8 }}>
+              <button className="btn-gold" style={{ padding:"10px 24px", borderRadius:8, fontSize:".85rem", opacity:loading?.6:1 }} onClick={addQuote} disabled={loading}>
+                {loading ? "Saving…" : "Add Quote"}
+              </button>
               <button className="btn-outline" style={{ padding:"10px 20px", borderRadius:8, fontSize:".85rem" }} onClick={onClose}>Done</button>
             </div>
-            {extraQuotes.length > 0 && (
-              <div>
-                <hr className="gold-divider" style={{ marginBottom:"1rem" }} />
-                <p style={{ fontFamily:"'Jost'", fontSize:".75rem", color:"rgba(201,168,76,.6)", letterSpacing:".1em", textTransform:"uppercase", marginBottom:".8rem" }}>Your Added Quotes ({extraQuotes.length})</p>
-                {extraQuotes.map((q,i) => (
-                  <div key={i} style={{ background:"rgba(255,255,255,.04)", borderRadius:8, padding:".7rem 1rem", marginBottom:".5rem", display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
-                    <p style={{ fontFamily:"'EB Garamond',serif", fontSize:".9rem", color:"#d4c9b0", flex:1, lineHeight:1.5 }}>{q.t}</p>
-                    <button className="btn-ghost" style={{ flexShrink:0, color:"#fb7185", borderColor:"#fb718544", fontSize:".7rem" }} onClick={() => removeQuote(i)}>✕</button>
-                  </div>
-                ))}
-              </div>
+          </div>
+        )}
+
+        {authed && screen === "list" && (
+          <div>
+            {loadingList ? (
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:"italic", color:"rgba(220,210,190,.4)", textAlign:"center", padding:"2rem 0" }}>Loading…</p>
+            ) : (
+              <>
+                {err && <p style={{ color:"#fb7185", fontSize:".82rem", marginBottom:"1rem" }}>{err}</p>}
+                {ghQuotes.length === 0 && !err && (
+                  <p style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:"italic", color:"rgba(220,210,190,.4)", textAlign:"center", padding:"2rem 0" }}>No quotes added via admin yet.</p>
+                )}
+                <div style={{ maxHeight:400, overflowY:"auto", paddingRight:4 }}>
+                  {ghQuotes.map((q,i) => (
+                    <div key={i} style={{ background:"rgba(255,255,255,.04)", borderRadius:8, padding:".75rem 1rem", marginBottom:".5rem", display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+                      <div style={{ flex:1 }}>
+                        <p style={{ fontFamily:"'EB Garamond',serif", fontSize:".9rem", color:"#d4c9b0", lineHeight:1.55, marginBottom:".3rem" }}>{q.t}</p>
+                        <span className="pill" style={{ background:`${CATS[q.c]?.color}22`, color:CATS[q.c]?.accent, border:`1px solid ${CATS[q.c]?.color}33`, fontSize:".62rem" }}>
+                          {CATS[q.c]?.icon} {CATS[q.c]?.label}
+                        </span>
+                      </div>
+                      <button className="btn-ghost" style={{ flexShrink:0, color:"#fb7185", borderColor:"#fb718544", fontSize:".7rem", padding:"4px 8px" }} onClick={() => removeQuote(i)}>✕</button>
+                    </div>
+                  ))}
+                </div>
+                <p style={{ fontFamily:"'Jost',sans-serif", fontSize:".72rem", color:"rgba(255,255,255,.22)", marginTop:".8rem", textAlign:"center" }}>
+                  {ghQuotes.length} quote{ghQuotes.length!==1?"s":""} added via admin
+                </p>
+              </>
             )}
           </div>
         )}
+
       </div>
     </div>
   );
@@ -1246,31 +1395,41 @@ function Nav({ view, setView, setAdminOpen }) {
 export default function AurumVault() {
   const [view, setView]               = useState({ page:"home" });
   const [favs, setFavs]               = useState(() => stored("av_favs") || []);
-  const [extraQuotes, setExtraQuotes] = useState(() => stored("av_extra_quotes") || []);
+  const [githubQuotes, setGithubQuotes] = useState([]);
   const [adminOpen, setAdminOpen]     = useState(false);
   const [toast, setToast]             = useState(null);
 
-  const allQuotes = useMemo(() => [...BASE_QUOTES, ...extraQuotes], [extraQuotes]);
+  const fetchGithubQuotes = useCallback(() => {
+    const gh = stored("av_gh");
+    if (!gh?.owner || !gh?.repo) return;
+    fetch(`https://raw.githubusercontent.com/${gh.owner}/${gh.repo}/main/public/quotes.json?t=${Date.now()}`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setGithubQuotes(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => { fetchGithubQuotes(); }, [fetchGithubQuotes]);
+
+  const allQuotes = useMemo(() => [...BASE_QUOTES, ...githubQuotes], [githubQuotes]);
 
   const toggleFav = useCallback((text) => {
     setFavs(prev => {
       const next = prev.includes(text) ? prev.filter(t => t !== text) : [...prev, text];
-      store("av_favs", next);
-      return next;
+      store("av_favs", next); return next;
     });
   }, []);
 
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2100); };
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2200); };
   const props = { allQuotes, favs, toggleFav, setToast:showToast, setView };
 
   return (
-    <div style={{ minHeight:"100vh", background:"var(--black)" }}>
+    <div style={{ minHeight:"100vh", background:"#080808" }}>
       <Nav view={view} setView={setView} setAdminOpen={setAdminOpen} />
       {view.page==="home"     && <HomePage {...props} />}
       {view.page==="category" && <CategoryPage catKey={view.cat} {...props} />}
       {view.page==="search"   && <SearchPage {...props} />}
       {view.page==="favs"     && <FavsPage {...props} />}
-      {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} extraQuotes={extraQuotes} setExtraQuotes={setExtraQuotes} setToast={showToast} />}
+      {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} setToast={showToast} refreshQuotes={fetchGithubQuotes} />}
       {toast && <Toast msg={toast} onDone={() => setToast(null)} />}
       <footer style={{ borderTop:"1px solid rgba(201,168,76,.1)", padding:"2rem 1.5rem", textAlign:"center" }}>
         <p style={{ fontFamily:"'Cinzel',serif", color:"rgba(201,168,76,.4)", fontSize:".7rem", letterSpacing:".2em" }}>THE AURUM VAULT</p>
