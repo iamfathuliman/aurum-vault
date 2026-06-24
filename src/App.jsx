@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 /* ── Fonts & Global Styles ─────────────────────────────────── */
 const injectAssets = () => {
@@ -1423,6 +1424,7 @@ export default function AurumVault() {
   return (
     <div style={{ minHeight:"100vh", background:"#080808" }}>
       <Nav view={view} setView={setView} setAdminOpen={setAdminOpen} />
+      <Analytics />
       {view.page==="home"     && <HomePage {...props} />}
       {view.page==="category" && <CategoryPage catKey={view.cat} {...props} />}
       {view.page==="search"   && <SearchPage {...props} />}
